@@ -5,8 +5,6 @@ import Button from '../ui/Button';
 import SearchableDropdown from '../ui/SearchableDropdown';
 import Card from '../ui/Card';
 
-// Simplified types just for this component
-type JobType = 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'TEMPORARY' | 'INTERNSHIP';
 
 interface Option {
   value: string;

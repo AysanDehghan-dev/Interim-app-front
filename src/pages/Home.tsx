@@ -3,10 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../hooks/useAuth';
 import { enhancedMockJobs } from '../mock/enhancedMockData';
-import { JobType, Job } from '../types';
-import SearchableDropdown from '../components/ui/SearchableDropdown';
+import { Job } from '../types';
 import Button from '../components/ui/Button';
-import Card from '../components/ui/Card';
 import SimpleSearch from '../components/search/SimpleSearch';
 import JobCard from '../components/jobs/JobCard';
 import JobDetailModal from '../components/jobs/JobDetailModal';
@@ -91,14 +89,14 @@ const ResultsInfo = styled.div`
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   
   // State for job modal
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
   
   // Filter states
-  const [filters, setFilters] = useState({
+  const [filters] = useState({
     keyword: '',
     location: '',
     jobType: '',

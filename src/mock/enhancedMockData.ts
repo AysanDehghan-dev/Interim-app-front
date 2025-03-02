@@ -1,4 +1,4 @@
-import { mockJobs, mockCompanies } from './mockData';
+import { mockJobs} from './mockData';
 import { Job } from '../types';
 
 // Enhanced job descriptions with more detailed content for the modal view
