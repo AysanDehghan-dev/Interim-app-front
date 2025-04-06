@@ -1,321 +1,245 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../hooks/useAuth';
-import { authAPI } from '../services/api';
+import { Job } from '../types';
 import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
-import Card from '../components/ui/Card';
+import SimpleSearch from '../components/search/SimpleSearch';
+import JobCard from '../components/jobs/JobCard';
+import JobDetailModal from '../components/jobs/JobDetailModal';
+import { jobsAPI } from '../services/api';
 
-const PageContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: ${({ theme }) => theme.spacing.xl} ${({ theme }) => theme.spacing.lg};
-`;
-
-const RegisterCard = styled(Card)`
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-`;
-
-const Title = styled.h1`
+const HeroSection = styled.section`
+  padding: ${({ theme }) => `${theme.spacing.xxl} ${theme.spacing.lg}`};
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.primary}, ${({ theme }) => theme.colors.primaryHover});
+  color: white;
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
   text-align: center;
   margin-bottom: ${({ theme }) => theme.spacing.xl};
-  font-size: 2rem;
-  color: ${({ theme }) => theme.colors.text};
-`;
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.lg};
-`;
-
-const ErrorAlert = styled.div`
-  background-color: ${({ theme }) => theme.colors.errorLight};
-  color: ${({ theme }) => theme.colors.error};
-  padding: ${({ theme }) => theme.spacing.md};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  margin-bottom: ${({ theme }) => theme.spacing.md};
-  font-size: ${({ theme }) => theme.fontSizes.sm};
-`;
-
-const SuccessAlert = styled.div`
-  background-color: ${({ theme }) => theme.colors.successLight};
-  color: ${({ theme }) => theme.colors.success};
-  padding: ${({ theme }) => theme.spacing.md};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  margin-bottom: ${({ theme }) => theme.spacing.md};
-  font-size: ${({ theme }) => theme.fontSizes.sm};
-`;
-
-const FooterText = styled.div`
-  margin-top: ${({ theme }) => theme.spacing.lg};
-  text-align: center;
-  font-size: ${({ theme }) => theme.fontSizes.sm};
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
-
-const StyledLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.primary};
-  text-decoration: none;
-  font-weight: ${({ theme }) => theme.fontWeights.medium};
+  position: relative;
+  overflow: hidden;
   
-  &:hover {
-    text-decoration: underline;
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='rgba(255,255,255,0.05)' fill-rule='evenodd'/%3E%3C/svg%3E");
+    opacity: 0.3;
   }
 `;
 
-const InfoText = styled.p`
+const HeroTitle = styled.h1`
+  font-size: 2.5rem;
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+  position: relative;
+  
+  @media (max-width: 768px) {
+    font-size: 2rem;
+  }
+`;
+
+const HeroSubtitle = styled.p`
+  font-size: 1.2rem;
+  max-width: 800px;
+  margin: 0 auto ${({ theme }) => theme.spacing.lg};
+  opacity: 0.9;
+  position: relative;
+  
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
+`;
+
+const SectionTitle = styled.h2`
+  font-size: 1.75rem;
   margin-bottom: ${({ theme }) => theme.spacing.lg};
   text-align: center;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-style: italic;
-`;
-
-// Textarea styling pour la description
-const DescriptionTextarea = styled.textarea`
-  width: 100%;
-  padding: ${({ theme }) => theme.spacing.md};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  background-color: ${({ theme }) => theme.colors.background};
-  color: ${({ theme }) => theme.colors.text};
-  font-size: ${({ theme }) => theme.fontSizes.md};
-  font-family: inherit;
-  min-height: 120px;
-  resize: vertical;
+  position: relative;
+  padding-bottom: ${({ theme }) => theme.spacing.sm};
   
-  &:focus {
-    outline: none;
-    border-color: ${({ theme }) => theme.colors.primary};
-    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.primaryFocus};
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background-color: ${({ theme }) => theme.colors.primary};
+    border-radius: 3px;
   }
 `;
 
-const FormGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.xs};
+const JobsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: ${({ theme }) => theme.spacing.lg};
+  margin-bottom: ${({ theme }) => theme.spacing.xl};
 `;
 
-const FormLabel = styled.label`
+const ResultsInfo = styled.div`
+  text-align: center;
+  margin: ${({ theme }) => theme.spacing.md} 0;
+  color: ${({ theme }) => theme.colors.textSecondary};
   font-size: ${({ theme }) => theme.fontSizes.sm};
-  font-weight: ${({ theme }) => theme.fontWeights.medium};
-  color: ${({ theme }) => theme.colors.text};
 `;
 
-const CompanyRegister: React.FC = () => {
-  const { login, isAuthenticated } = useAuth();
+const LoadingIndicator = styled.div`
+  text-align: center;
+  padding: ${({ theme }) => theme.spacing.xl};
+  font-size: ${({ theme }) => theme.fontSizes.lg};
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+const Home: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   
-  const [formData, setFormData] = useState({
-    companyName: '',
-    industry: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    description: '',
-    website: ''
-  });
-  
-  const [loading, setLoading] = useState(false);
+  // State for loading
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   
-  // Redirect if already authenticated
+  // State for job modal
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [isJobModalOpen, setIsJobModalOpen] = useState(false);
+  
+  // Filter states
+  const [filters] = useState({
+    keyword: '',
+    location: '',
+    jobType: '',
+    industry: '',
+    limit: 6,  // Display only 6 jobs on homepage
+    page: 1
+  });
+
+  // Job data states
+  const [featuredJobs, setFeaturedJobs] = useState<Job[]>([]);
+  const [totalJobs, setTotalJobs] = useState<number>(0);
+  
+  // Fetch jobs from API
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/');
-    }
-  }, [isAuthenticated, navigate]);
+    const fetchJobs = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Call the API to get jobs
+        const response = await jobsAPI.searchJobs(filters);
+        
+        if (response && response.jobs) {
+          setFeaturedJobs(response.jobs);
+          setTotalJobs(response.pagination.total);
+        }
+      } catch (err) {
+        console.error('Error fetching jobs:', err);
+        setError('Impossible de charger les offres d\'emploi. Affichage des données de démonstration.');
+        
+        // Fallback to mock data if API fails
+        const { enhancedMockJobs } = await import('../mock/enhancedMockData');
+        setFeaturedJobs(enhancedMockJobs.slice(0, 6));
+        setTotalJobs(enhancedMockJobs.length);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchJobs();
+  }, [filters]);
   
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  // Navigate to jobs page with filters
+  const handleSearchSubmit = () => {
+    navigate('/jobs');
   };
   
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-    setLoading(true);
-    
-    // Validate passwords match
-    if (formData.password !== formData.confirmPassword) {
-      setError("Les mots de passe ne correspondent pas");
-      setLoading(false);
+  // Handle job application
+  const handleApplyToJob = async (jobId: string) => {
+    if (!isAuthenticated) {
+      // Redirect to login if not authenticated
+      navigate('/login', { state: { from: `/jobs/${jobId}` } });
       return;
     }
     
     try {
-      // Prepare company data
-      const companyData = {
-        name: formData.companyName,
-        industry: formData.industry,
-        email: formData.email,
-        password: formData.password,
-        confirmPassword: formData.confirmPassword,
-        description: formData.description,
-        website: formData.website
-      };
+      // Apply for job using API
+      await jobsAPI.applyForJob(jobId, {
+        coverLetter: 'Je suis intéressé par cette offre d\'emploi.'
+      });
       
-      // Try API registration
-      try {
-        const result = await authAPI.registerCompany(companyData);
-        if (result) {
-          setSuccess("Inscription réussie !");
-          
-          // Auto-login after successful registration
-          setTimeout(async () => {
-            await login(formData.email, formData.password, 'company');
-            navigate('/company-dashboard');
-          }, 1500);
-          
-          return;
-        }
-      } catch (apiError) {
-        console.log('API registration failed, using fallback');
-        if (apiError instanceof Error) {
-          setError(apiError.message);
-        }
-      }
-      
-      // Fallback for demo: simulate successful registration
-      setSuccess("Inscription simulée réussie pour la démonstration");
-      setTimeout(async () => {
-        await login(formData.email, formData.password, 'company');
-        navigate('/company-dashboard');
-      }, 1500);
-      
+      alert('Votre candidature a été soumise avec succès !');
+      setIsJobModalOpen(false);
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Une erreur est survenue. Veuillez réessayer.");
-      }
-    } finally {
-      setLoading(false);
+      console.error('Error applying for job:', err);
+      alert('Impossible de soumettre votre candidature. Veuillez réessayer.');
     }
   };
   
+  // Open job detail modal
+  const handleViewJobDetails = (job: Job) => {
+    setSelectedJob(job);
+    setIsJobModalOpen(true);
+  };
+
   return (
-    <PageContainer>
-      <Title>Inscription Entreprise</Title>
+    <>
+      <HeroSection>
+        <HeroTitle>Trouvez votre prochain emploi intérimaire</HeroTitle>
+        <HeroSubtitle>
+          Accédez à des milliers d'offres d'emploi dans tous les secteurs et partout en France.
+        </HeroSubtitle>
+      </HeroSection>
       
-      <RegisterCard>
-        <InfoText>
-          Inscrivez votre entreprise pour publier des offres d'emploi et trouver les meilleurs talents.
-        </InfoText>
-        
-        <Form onSubmit={handleSubmit}>
-          {error && <ErrorAlert>{error}</ErrorAlert>}
-          {success && <SuccessAlert>{success}</SuccessAlert>}
+      <SimpleSearch />
+
+      <SectionTitle>Offres d'emploi récentes</SectionTitle>
+      
+      {loading ? (
+        <LoadingIndicator>Chargement des offres...</LoadingIndicator>
+      ) : error ? (
+        <div style={{ textAlign: 'center', color: 'red', marginBottom: '20px' }}>
+          {error}
+        </div>
+      ) : (
+        <>
+          <JobsGrid>
+            {featuredJobs.map(job => (
+              <JobCard 
+                key={job.id} 
+                job={job} 
+                onViewDetails={handleViewJobDetails}
+              />
+            ))}
+          </JobsGrid>
           
-          <Input
-            label="Nom de l'entreprise"
-            type="text"
-            id="companyName"
-            name="companyName"
-            value={formData.companyName}
-            onChange={handleChange}
-            required
-            fullWidth
-          />
-          
-          <Input
-            label="Secteur d'activité"
-            type="text"
-            id="industry"
-            name="industry"
-            value={formData.industry}
-            onChange={handleChange}
-            required
-            fullWidth
-          />
-          
-          <Input
-            label="Email professionnel"
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            fullWidth
-          />
-          
-          <Input
-            label="Site web"
-            type="url"
-            id="website"
-            name="website"
-            value={formData.website}
-            onChange={handleChange}
-            placeholder="https://..."
-            fullWidth
-          />
-          
-          {/* Description textarea custom */}
-          <FormGroup>
-            <FormLabel htmlFor="description">Description de l'entreprise</FormLabel>
-            <DescriptionTextarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Présentez votre entreprise en quelques lignes..."
-              rows={4}
-            />
-          </FormGroup>
-          
-          <Input
-            label="Mot de passe"
-            type="password"
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            minLength={6}
-            helperText="Minimum 6 caractères"
-            fullWidth
-          />
-          
-          <Input
-            label="Confirmer le mot de passe"
-            type="password"
-            id="confirmPassword"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            required
-            minLength={6}
-            fullWidth
-          />
-          
-          <Button
-            type="submit"
-            disabled={loading}
-            fullWidth
-          >
-            {loading ? 'Inscription en cours...' : "Inscrire mon entreprise"}
-          </Button>
-        </Form>
-        
-        <FooterText>
-          Votre entreprise est déjà inscrite ?{' '}
-          <StyledLink to="/company-login">Se connecter</StyledLink>
-        </FooterText>
-      </RegisterCard>
-    </PageContainer>
+          <ResultsInfo>
+            {totalJobs > 6 ? (
+              <Button 
+                variant="text" 
+                onClick={handleSearchSubmit}
+              >
+                Voir les {totalJobs} offres d'emploi disponibles
+              </Button>
+            ) : totalJobs > 0 ? (
+              `${totalJobs} offre(s) trouvée(s)`
+            ) : (
+              "Aucune offre disponible pour le moment"
+            )}
+          </ResultsInfo>
+        </>
+      )}
+      
+      {/* Job Detail Modal */}
+      <JobDetailModal
+        isOpen={isJobModalOpen}
+        onClose={() => setIsJobModalOpen(false)}
+        job={selectedJob}
+        onApply={handleApplyToJob}
+      />
+    </>
   );
 };
 
-export default CompanyRegister;
+export default Home;
