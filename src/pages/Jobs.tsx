@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../hooks/useAuth';
-import { mockCompanies } from '../mock/mockData';
-import { enhancedMockJobs } from '../mock/enhancedMockData';
 import { Job, JobType } from '../types';
 import SearchableDropdown, { Option } from '../components/ui/SearchableDropdown';
 import JobCard from '../components/jobs/JobCard';
 import JobDetailModal from '../components/jobs/JobDetailModal';
 import Card from '../components/ui/Card';
+// We'll use the mock data for now and later replace with API data
+import { enhancedMockJobs } from '../mock/enhancedMockData';
 
 const PageContainer = styled.div`
   padding: ${({ theme }) => theme.spacing.lg} 0;
@@ -101,7 +101,8 @@ const Jobs: React.FC = () => {
   // Generate industry options from mock data
   const industryOptions: Option[] = [
     { value: '', label: 'Tous les secteurs' },
-    ...Array.from(new Set(mockCompanies.map(company => company.industry)))
+    ...Array.from(new Set(enhancedMockJobs.map(job => job.company?.industry || '')))
+      .filter(industry => industry) // Remove empty strings
       .map(industry => ({
         value: industry,
         label: industry
@@ -118,7 +119,7 @@ const Jobs: React.FC = () => {
       results = results.filter(job => 
         job.title.toLowerCase().includes(keyword) || 
         job.description.toLowerCase().includes(keyword) ||
-        job.company.name.toLowerCase().includes(keyword) ||
+        (job.company?.name || '').toLowerCase().includes(keyword) ||
         job.requirements.some(req => req.toLowerCase().includes(keyword))
       );
     }
@@ -138,7 +139,7 @@ const Jobs: React.FC = () => {
     // Filter by industry
     if (filters.industry) {
       results = results.filter(job => 
-        job.company.industry.toLowerCase() === filters.industry.toLowerCase()
+        job.company?.industry?.toLowerCase() === filters.industry.toLowerCase()
       );
     }
     

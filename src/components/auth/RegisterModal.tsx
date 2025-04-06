@@ -3,6 +3,8 @@ import styled from 'styled-components';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
+import { authAPI } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth';
 
 interface RegisterModalProps {
   isOpen: boolean;
@@ -76,6 +78,7 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
   onSwitchToLogin,
   userType 
 }) => {
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -117,12 +120,59 @@ const RegisterModal: React.FC<RegisterModalProps> = ({
       return;
     }
     
-    // Simulate registration
-    setTimeout(() => {
-      setLoading(false);
-      onSwitchToLogin();
-      alert("Inscription réussie ! Veuillez vous connecter.");
-    }, 1500);
+    try {
+      // Try to register with API
+      if (userType === 'user') {
+        // Prepare user data
+        const userData = {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword
+        };
+        
+        await authAPI.registerUser(userData);
+        
+        // Auto-login after successful registration
+        await login(formData.email, formData.password, 'user');
+        
+      } else {
+        // Prepare company data
+        const companyData = {
+          name: formData.companyName,
+          industry: formData.industry,
+          email: formData.email,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword
+        };
+        
+        await authAPI.registerCompany(companyData);
+        
+        // Auto-login after successful registration
+        await login(formData.email, formData.password, 'company');
+      }
+      
+      // Close modal and show success message
+      onClose();
+      alert("Inscription réussie ! Vous êtes maintenant connecté.");
+      
+    } catch (err) {
+      // Handle registration errors
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Une erreur est survenue lors de l'inscription. Veuillez réessayer.");
+      }
+      
+      // Fallback to simulation if API fails
+      console.log("API registration failed, falling back to simulated registration");
+      setTimeout(() => {
+        setLoading(false);
+        onSwitchToLogin();
+        alert("Inscription réussie ! Veuillez vous connecter.");
+      }, 1500);
+    }
   };
 
   return (

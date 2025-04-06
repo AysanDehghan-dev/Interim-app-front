@@ -1,116 +1,106 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../hooks/useAuth';
-import { useTheme } from '../hooks/useTheme';
+import { authAPI } from '../services/api';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import Card from '../components/ui/Card';
 
-const LoginContainer = styled.div<{ isDark: boolean }>`
-  max-width: 500px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background-color: ${({ isDark }) => (isDark ? '#444' : '#fff')};
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+const PageContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: ${({ theme }) => theme.spacing.xl} ${({ theme }) => theme.spacing.lg};
+`;
+
+const LoginCard = styled(Card)`
+  width: 100%;
+  max-width: 450px;
+  margin: 0 auto;
 `;
 
 const Title = styled.h1`
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: ${({ theme }) => theme.spacing.xl};
   font-size: 2rem;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: ${({ theme }) => theme.spacing.lg};
 `;
 
-const FormGroup = styled.div`
+const DemoInfoCard = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing.lg};
+  padding: ${({ theme }) => theme.spacing.md};
+  background-color: ${({ theme }) => theme.colors.infoLight};
+  border-left: 4px solid ${({ theme }) => theme.colors.info};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+`;
+
+const InfoText = styled.p`
+  margin: 0;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
+`;
+
+const ErrorAlert = styled.div`
+  background-color: ${({ theme }) => theme.colors.errorLight};
+  color: ${({ theme }) => theme.colors.error};
+  padding: ${({ theme }) => theme.spacing.md};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+  font-size: ${({ theme }) => theme.fontSizes.sm};
+`;
+
+const FooterText = styled.div`
+  margin-top: ${({ theme }) => theme.spacing.lg};
+  text-align: center;
+  font-size: ${({ theme }) => theme.fontSizes.sm};
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+const StyledLink = styled(Link)`
+  color: ${({ theme }) => theme.colors.primary};
+  text-decoration: none;
+  font-weight: ${({ theme }) => theme.fontWeights.medium};
+  
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const ButtonsContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-`;
-
-const Label = styled.label`
-  font-weight: 500;
-`;
-
-const Input = styled.input<{ isDark: boolean }>`
-  padding: 0.75rem;
-  border: 1px solid ${({ isDark }) => (isDark ? '#666' : '#ced4da')};
-  border-radius: 4px;
-  background-color: ${({ isDark }) => (isDark ? '#555' : '#fff')};
-  color: ${({ isDark }) => (isDark ? '#f8f9fa' : '#333')};
-  
-  &:focus {
-    outline: none;
-    border-color: ${({ isDark }) => (isDark ? '#90caf9' : '#0d6efd')};
-    box-shadow: 0 0 0 2px ${({ isDark }) => (isDark ? 'rgba(144, 202, 249, 0.25)' : 'rgba(13, 110, 253, 0.25)')};
-  }
-`;
-
-const SubmitButton = styled.button<{ isDark: boolean }>`
-  padding: 0.75rem;
-  background-color: ${({ isDark }) => (isDark ? '#90caf9' : '#0d6efd')};
-  color: ${({ isDark }) => (isDark ? '#222' : '#fff')};
-  border: none;
-  border-radius: 4px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background-color: ${({ isDark }) => (isDark ? '#64b5f6' : '#0b5ed7')};
-  }
-
-  &:disabled {
-    background-color: ${({ isDark }) => (isDark ? '#78909c' : '#6c757d')};
-    cursor: not-allowed;
-  }
-`;
-
-const ErrorMessage = styled.div`
-  color: #dc3545;
-  margin-top: 1rem;
-  padding: 0.75rem;
-  background-color: rgba(220, 53, 69, 0.1);
-  border-radius: 4px;
-  text-align: center;
-`;
-
-const RegisterLink = styled.div`
-  text-align: center;
-  margin-top: 1.5rem;
-`;
-
-const StyledLink = styled(Link)<{ isDark: boolean }>`
-  color: ${({ isDark }) => (isDark ? '#90caf9' : '#0d6efd')};
-  text-decoration: underline;
-  
-  &:hover {
-    color: ${({ isDark }) => (isDark ? '#64b5f6' : '#0a58ca')};
-  }
-`;
-
-const LoginInfo = styled.div<{ isDark: boolean }>`
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background-color: ${({ isDark }) => (isDark ? '#555' : '#f8f9fa')};
-  border-radius: 4px;
-  text-align: center;
+  gap: ${({ theme }) => theme.spacing.md};
 `;
 
 const CompanyLogin: React.FC = () => {
-  const { login, error, loading } = useAuth();
-  const { themeMode } = useTheme();
-  const isDark = themeMode === 'dark';
+  const { login, isAuthenticated, company } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-
+  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Redirect if already authenticated as a company
+  useEffect(() => {
+    if (isAuthenticated && company) {
+      // Redirect to the page they were trying to access or to dashboard
+      const from = location.state?.from || '/company-dashboard';
+      navigate(from);
+    }
+  }, [isAuthenticated, company, navigate, location]);
+  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -118,74 +108,109 @@ const CompanyLogin: React.FC = () => {
       [name]: value
     }));
   };
-
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setLoading(true);
     
     const { email, password } = formData;
-    const success = await login(email, password, 'company');
     
-    if (success) {
-      navigate('/company-profile');
+    try {
+      // Try API login first
+      try {
+        const result = await authAPI.loginCompany(email, password);
+        if (result && result.token) {
+          // API login successful, redirect
+          const from = location.state?.from || '/company-dashboard';
+          navigate(from);
+          return;
+        }
+      } catch (apiError) {
+        console.log('API login failed, falling back to context login');
+      }
+      
+      // Fallback to context login
+      const success = await login(email, password, 'company');
+      
+      if (success) {
+        // Context login successful, redirect
+        const from = location.state?.from || '/company-dashboard';
+        navigate(from);
+      } else {
+        setError('Email ou mot de passe incorrect');
+      }
+    } catch (err) {
+      setError('Une erreur est survenue. Veuillez réessayer.');
+    } finally {
+      setLoading(false);
     }
   };
-
+  
   return (
-    <LoginContainer isDark={isDark}>
+    <PageContainer>
       <Title>Espace Entreprise</Title>
       
-      <LoginInfo isDark={isDark}>
-        <p>
-          Pour la démo, utilisez ces identifiants :
-        </p>
-        <p>
-          <strong>Email:</strong> contact@techcorp.example.com
-          <br />
-          <strong>Mot de passe:</strong> password
-        </p>
-      </LoginInfo>
-      
-      <Form onSubmit={handleSubmit}>
-        <FormGroup>
-          <Label htmlFor="email">Email de l'entreprise</Label>
+      <LoginCard>
+        <DemoInfoCard>
+          <InfoText>
+            <strong>Pour la démo, utilisez ces identifiants:</strong><br />
+            <strong>Email:</strong> contact@techcorp.example.com<br />
+            <strong>Mot de passe:</strong> password
+          </InfoText>
+        </DemoInfoCard>
+        
+        <Form onSubmit={handleSubmit}>
+          {error && <ErrorAlert>{error}</ErrorAlert>}
+          
           <Input
+            label="Email"
             type="email"
             id="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
             required
-            isDark={isDark}
+            fullWidth
           />
-        </FormGroup>
-        
-        <FormGroup>
-          <Label htmlFor="password">Mot de passe</Label>
+          
           <Input
+            label="Mot de passe"
             type="password"
             id="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
             required
-            isDark={isDark}
+            fullWidth
           />
-        </FormGroup>
+          
+          <ButtonsContainer>
+            <Button
+              type="submit"
+              disabled={loading}
+              fullWidth
+            >
+              {loading ? 'Connexion en cours...' : 'Se connecter'}
+            </Button>
+            
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/login')}
+              fullWidth
+            >
+              Espace Candidat
+            </Button>
+          </ButtonsContainer>
+        </Form>
         
-        {error && <ErrorMessage>{error}</ErrorMessage>}
-        
-        <SubmitButton type="submit" disabled={loading} isDark={isDark}>
-          {loading ? 'Connexion en cours...' : 'Se connecter'}
-        </SubmitButton>
-      </Form>
-      
-      <RegisterLink>
-        Votre entreprise n'est pas encore inscrite ?{' '}
-        <StyledLink to="/company-register" isDark={isDark}>
-          Inscrivez-vous
-        </StyledLink>
-      </RegisterLink>
-    </LoginContainer>
+        <FooterText>
+          Votre entreprise n'est pas encore inscrite ?{' '}
+          <StyledLink to="/company-register">Inscrivez-vous</StyledLink>
+        </FooterText>
+      </LoginCard>
+    </PageContainer>
   );
 };
 

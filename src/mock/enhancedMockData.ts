@@ -123,15 +123,23 @@ Nous offrons un environnement de travail flexible, des projets stimulants et des
 export const getEnhancedJobs = (): Job[] => {
   return mockJobs.map(job => {
     const jobId = job.id;
-    return {
+    
+    // Create a safe copy of the job with company data
+    const enhancedJob: Job = {
       ...job,
       description: enhancedJobDescriptions[jobId] || job.description,
       requirements: enhancedJobRequirements[jobId] || job.requirements,
-      company: {
-        ...job.company,
-        description: enhancedCompanyDescriptions[job.company.id] || job.company.description
-      }
+      // Only include company data if it exists
+      ...(job.company && {
+        company: {
+          ...job.company,
+          // Safely access company id and description
+          description: enhancedCompanyDescriptions[job.company.id || ''] || job.company.description || "Description non disponible"
+        }
+      })
     };
+    
+    return enhancedJob;
   });
 };
 
