@@ -137,13 +137,17 @@ const getJobTypeLabel = (type: JobType): string => {
 };
 
 const JobCard: React.FC<JobCardProps> = ({ job, onViewDetails }) => {
+  // Use optional chaining and provide default values
+  const companyName = job.company?.name || "Entreprise";
+  const companyLogo = job.company?.logo || 'https://placehold.co/48x48?text=Logo';
+
   return (
     <JobCardContainer elevation="sm">
       <JobCardHeader>
-        <CompanyLogo src={job.company.logo || 'https://placehold.co/48x48?text=Logo'} alt={job.company.name} />
+        <CompanyLogo src={companyLogo} alt={companyName} />
         <div>
           <JobTitle>{job.title}</JobTitle>
-          <CompanyName>{job.company.name}</CompanyName>
+          <CompanyName>{companyName}</CompanyName>
         </div>
       </JobCardHeader>
       
