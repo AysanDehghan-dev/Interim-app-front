@@ -132,10 +132,20 @@ const getJobTypeLabel = (type: string): string => {
 const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, onClose, job, onApply }) => {
   if (!job) return null;
 
+  // Handle the case where job.company might be undefined
+  const companyName = job.company?.name || "Entreprise";
+  const companyLogo = job.company?.logo || 'https://placehold.co/64x64?text=Logo';
+  const companyDescription = job.company?.description || "Information sur l'entreprise non disponible.";
+
   const handleApply = () => {
     onApply(job.id);
     onClose();
   };
+
+  // Format createdAt date if it exists and is a valid date
+  const formattedDate = job.createdAt 
+    ? new Date(job.createdAt).toLocaleDateString('fr-FR')
+    : 'Date non disponible';
 
   return (
     <Modal
@@ -145,10 +155,10 @@ const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, onClose, job, o
     >
       <ModalContent>
         <JobHeader>
-          <CompanyLogo src={job.company.logo || 'https://placehold.co/64x64?text=Logo'} alt={job.company.name} />
+          <CompanyLogo src={companyLogo} alt={companyName} />
           <JobTitleContainer>
             <JobTitle>{job.title}</JobTitle>
-            <CompanyName>{job.company.name}</CompanyName>
+            <CompanyName>{companyName}</CompanyName>
           </JobTitleContainer>
         </JobHeader>
 
@@ -165,7 +175,7 @@ const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, onClose, job, o
               <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
               <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
             </svg>
-            Publié le {job.createdAt.toLocaleDateString('fr-FR')}
+            Publié le {formattedDate}
           </InfoItem>
           
           <JobTypeTag>
@@ -189,14 +199,14 @@ const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, onClose, job, o
 
         <SectionTitle>Compétences requises</SectionTitle>
         <RequirementsList>
-          {job.requirements.map((req, index) => (
+          {job.requirements?.map((req, index) => (
             <li key={index}>{req}</li>
-          ))}
+          )) || <li>Information non disponible</li>}
         </RequirementsList>
 
-        <SectionTitle>À propos de {job.company.name}</SectionTitle>
+        <SectionTitle>À propos de {companyName}</SectionTitle>
         <JobDescription>
-          {job.company.description}
+          {companyDescription}
         </JobDescription>
 
         <ApplySection>
