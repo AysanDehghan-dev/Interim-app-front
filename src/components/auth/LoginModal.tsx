@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../../hooks/useAuth';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
+import { authAPI } from '../../services/api';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -73,12 +74,21 @@ const LoginModal: React.FC<LoginModalProps> = ({
   onSwitchToRegister,
   userType 
 }) => {
-  const { login, error, loading } = useAuth();
+  const { login, error: authError, loading: authLoading } = useAuth();
   
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Sync with auth context state
+  useEffect(() => {
+    setLoading(authLoading);
+    setError(authError);
+  }, [authLoading, authError]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -90,12 +100,40 @@ const LoginModal: React.FC<LoginModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     const { email, password } = formData;
-    const success = await login(email, password, userType);
     
-    if (success) {
-      onClose();
+    try {
+      setLoading(true);
+      
+      // Try API login first
+      if (userType === 'user') {
+        const result = await authAPI.loginUser(email, password);
+        if (result && result.token) {
+          onClose();
+          return;
+        }
+      } else {
+        const result = await authAPI.loginCompany(email, password);
+        if (result && result.token) {
+          onClose();
+          return;
+        }
+      }
+      
+      // Fallback to context login if API fails
+      const success = await login(email, password, userType);
+      if (success) {
+        onClose();
+      }
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Erreur lors de la connexion. Veuillez réessayer.');
+      }
+      setLoading(false);
     }
   };
 
