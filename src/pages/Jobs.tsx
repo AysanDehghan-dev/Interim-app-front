@@ -9,6 +9,7 @@ import SearchableDropdown, { Option } from '../components/ui/SearchableDropdown'
 import JobCard from '../components/jobs/JobCard';
 import JobDetailModal from '../components/jobs/JobDetailModal';
 import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
 
 const PageContainer = styled.div`
   padding: ${({ theme }) => theme.spacing.lg} 0;
@@ -113,12 +114,24 @@ const Jobs: React.FC = () => {
       }))
   ];
   
+  // Update URL parameters and state when location.search changes
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    setFilters({
+      keyword: urlParams.get('keyword') || '',
+      location: urlParams.get('location') || '',
+      jobType: urlParams.get('jobType') || '',
+      industry: urlParams.get('industry') || '',
+    });
+  }, [location.search]);
+  
   // Filter jobs when filters change
   useEffect(() => {
+    console.log("Applying filters:", filters);
     let results = enhancedMockJobs;
     
     // Filter by keyword
-    if (filters.keyword.trim()) {
+    if (filters.keyword && filters.keyword.trim()) {
       const keyword = filters.keyword.toLowerCase();
       results = results.filter(job => {
         // Check title and description
@@ -139,6 +152,7 @@ const Jobs: React.FC = () => {
     
     // Filter by location
     if (filters.location) {
+      console.log("Filtering by location:", filters.location);
       results = results.filter(job => 
         job.location.toLowerCase().includes(filters.location.toLowerCase())
       );
@@ -146,11 +160,13 @@ const Jobs: React.FC = () => {
     
     // Filter by job type
     if (filters.jobType) {
-      results = results.filter(job => job.type === filters.jobType as JobType);
+      console.log("Filtering by job type:", filters.jobType);
+      results = results.filter(job => job.type === filters.jobType);
     }
     
     // Filter by industry
     if (filters.industry) {
+      console.log("Filtering by industry:", filters.industry);
       results = results.filter(job => {
         if (jobHasCompany(job)) {
           return job.company.industry.toLowerCase() === filters.industry.toLowerCase();
@@ -159,10 +175,35 @@ const Jobs: React.FC = () => {
       });
     }
     
+    console.log("Filtered results count:", results.length);
     // Update filtered jobs
     setFilteredJobs(results);
     
+  }, [filters]);
+  
+  // Handle filter change - update URL and state
+  const handleFilterChange = (name: string, value: string) => {
+    const newFilters = {
+      ...filters,
+      [name]: value
+    };
+    
     // Update URL with the new filters
+    const params = new URLSearchParams();
+    if (newFilters.keyword) params.set('keyword', newFilters.keyword);
+    if (newFilters.location) params.set('location', newFilters.location);
+    if (newFilters.jobType) params.set('jobType', newFilters.jobType);
+    if (newFilters.industry) params.set('industry', newFilters.industry);
+    
+    navigate({ pathname: location.pathname, search: params.toString() }, { replace: true });
+    
+    // Also update state directly
+    setFilters(newFilters);
+  };
+  
+  // Handle search submission
+  const handleSearch = () => {
+    // Update URL with current filters
     const params = new URLSearchParams();
     if (filters.keyword) params.set('keyword', filters.keyword);
     if (filters.location) params.set('location', filters.location);
@@ -170,14 +211,6 @@ const Jobs: React.FC = () => {
     if (filters.industry) params.set('industry', filters.industry);
     
     navigate({ pathname: location.pathname, search: params.toString() }, { replace: true });
-  }, [filters, location.pathname, navigate]);
-  
-  // Handle filter change
-  const handleFilterChange = (name: string, value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      [name]: value
-    }));
   };
   
   // Handle job application
@@ -198,7 +231,7 @@ const Jobs: React.FC = () => {
     setSelectedJob(job);
     setIsJobModalOpen(true);
   };
-  
+
   return (
     <PageContainer>
       <PageTitle>Recherche d'emploi</PageTitle>
@@ -238,6 +271,12 @@ const Jobs: React.FC = () => {
             label="Secteur"
           />
         </FiltersGrid>
+        
+        <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+          <Button onClick={handleSearch}>
+            Rechercher
+          </Button>
+        </div>
       </FiltersContainer>
       
       <ResultsCount>
