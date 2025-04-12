@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
-import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
+import styled from 'styled-components';
 import Button from '../ui/Button';
 import SearchableDropdown from '../ui/SearchableDropdown';
 import Card from '../ui/Card';
 
-
 interface Option {
   value: string;
   label: string;
+}
+
+interface SimpleSearchProps {
+  onSearch?: (filters: any) => void;
 }
 
 const SearchContainer = styled.div`
@@ -47,7 +50,7 @@ const AdvancedSearchToggle = styled.button`
   }
 `;
 
-const SimpleSearch: React.FC = () => {
+const SimpleSearch: React.FC<SimpleSearchProps> = ({ onSearch }) => {
   const navigate = useNavigate();
   const [showAdvanced, setShowAdvanced] = useState(false);
   
@@ -91,18 +94,25 @@ const SimpleSearch: React.FC = () => {
     }));
   };
 
-  // Navigate to jobs page with filters
+  // Handle search submission
   const handleSearchSubmit = () => {
+    // Always navigate to the jobs page with the filters
     const params = new URLSearchParams();
     if (filters.keyword) params.append('keyword', filters.keyword);
     if (filters.location) params.append('location', filters.location);
     if (filters.jobType) params.append('jobType', filters.jobType);
     if (filters.industry) params.append('industry', filters.industry);
     
+    // Always navigate to /jobs with the search params
     navigate({
       pathname: '/jobs',
       search: params.toString()
     });
+    
+    // Also call the onSearch callback if provided (for any additional handling)
+    if (onSearch) {
+      onSearch(filters);
+    }
   };
 
   return (
