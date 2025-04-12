@@ -101,7 +101,7 @@ const Home: React.FC = () => {
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
   
   // Filter states
-  const [filters] = useState({
+  const [filters, setFilters] = useState({
     keyword: '',
     location: '',
     jobType: '',
@@ -112,12 +112,23 @@ const Home: React.FC = () => {
   const [filteredJobs, setFilteredJobs] = useState<Job[]>(enhancedMockJobs.slice(0, 6));
   const [allFilteredJobs, setAllFilteredJobs] = useState<Job[]>(enhancedMockJobs);
   
+  // Handle search form submission from SimpleSearch component
+  const handleSearchSubmit = (searchFilters: any) => {
+    // Update local filters
+    setFilters(searchFilters);
+  };
+  
+  // Handle "View all jobs" button click
+  const handleViewAllJobs = () => {
+    navigate('/jobs');
+  };
+  
   // Filter jobs when filters change
   useEffect(() => {
     let results = enhancedMockJobs;
     
-          // Filter by keyword
-    if (filters.keyword.trim()) {
+    // Filter by keyword
+    if (filters.keyword && filters.keyword.trim()) {
       const keyword = filters.keyword.toLowerCase();
       results = results.filter(job => {
         // Check title and description
@@ -163,20 +174,6 @@ const Home: React.FC = () => {
     setFilteredJobs(results.slice(0, 6)); // Display only first 6 jobs on homepage
   }, [filters]);
   
-  // Navigate to jobs page with filters
-  const handleSearchSubmit = () => {
-    const params = new URLSearchParams();
-    if (filters.keyword) params.append('keyword', filters.keyword);
-    if (filters.location) params.append('location', filters.location);
-    if (filters.jobType) params.append('jobType', filters.jobType);
-    if (filters.industry) params.append('industry', filters.industry);
-    
-    navigate({
-      pathname: '/jobs',
-      search: params.toString()
-    });
-  };
-  
   // Handle job application
   const handleApplyToJob = (jobId: string) => {
     if (!isAuthenticated) {
@@ -205,7 +202,7 @@ const Home: React.FC = () => {
         </HeroSubtitle>
       </HeroSection>
       
-      <SimpleSearch />
+      <SimpleSearch onSearch={handleSearchSubmit} />
 
       <SectionTitle>Offres d'emploi récentes</SectionTitle>
       
@@ -223,7 +220,7 @@ const Home: React.FC = () => {
         {allFilteredJobs.length > 6 ? (
           <Button 
             variant="text" 
-            onClick={handleSearchSubmit}
+            onClick={handleViewAllJobs}
           >
             Voir les {allFilteredJobs.length} offres d'emploi disponibles
           </Button>
