@@ -87,6 +87,11 @@ const ResultsInfo = styled.div`
   font-size: ${({ theme }) => theme.fontSizes.sm};
 `;
 
+// Helper function to check if a job has company data
+const jobHasCompany = (job: Job): job is Job & { company: NonNullable<Job['company']> } => {
+  return job.company !== undefined && job.company !== null;
+};
+
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -111,15 +116,24 @@ const Home: React.FC = () => {
   useEffect(() => {
     let results = enhancedMockJobs;
     
-    // Filter by keyword
+          // Filter by keyword
     if (filters.keyword.trim()) {
       const keyword = filters.keyword.toLowerCase();
-      results = results.filter(job => 
-        job.title.toLowerCase().includes(keyword) || 
-        job.description.toLowerCase().includes(keyword) ||
-        job.company.name.toLowerCase().includes(keyword) ||
-        job.requirements.some(req => req.toLowerCase().includes(keyword))
-      );
+      results = results.filter(job => {
+        // Check title and description
+        if (job.title.toLowerCase().includes(keyword) || 
+            job.description.toLowerCase().includes(keyword) ||
+            job.requirements.some(req => req.toLowerCase().includes(keyword))) {
+          return true;
+        }
+        
+        // Check company name if company exists
+        if (jobHasCompany(job)) {
+          return job.company.name.toLowerCase().includes(keyword);
+        }
+        
+        return false;
+      });
     }
     
     // Filter by location
@@ -136,9 +150,12 @@ const Home: React.FC = () => {
     
     // Filter by industry
     if (filters.industry) {
-      results = results.filter(job => 
-        job.company.industry.toLowerCase() === filters.industry.toLowerCase()
-      );
+      results = results.filter(job => {
+        if (jobHasCompany(job)) {
+          return job.company.industry.toLowerCase() === filters.industry.toLowerCase();
+        }
+        return false;
+      });
     }
     
     // Update filtered jobs
