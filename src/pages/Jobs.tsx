@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../hooks/useAuth';
+import { mockCompanies } from '../mock/mockData';
+import { enhancedMockJobs } from '../mock/enhancedMockData';
 import { Job, JobType } from '../types';
 import SearchableDropdown, { Option } from '../components/ui/SearchableDropdown';
 import JobCard from '../components/jobs/JobCard';
 import JobDetailModal from '../components/jobs/JobDetailModal';
 import Card from '../components/ui/Card';
-// We'll use the mock data for now and later replace with API data
-import { enhancedMockJobs } from '../mock/enhancedMockData';
 
 const PageContainer = styled.div`
   padding: ${({ theme }) => theme.spacing.lg} 0;
@@ -54,6 +54,11 @@ const NoResults = styled.div`
   border-radius: ${({ theme }) => theme.borderRadius.lg};
   margin-bottom: ${({ theme }) => theme.spacing.xl};
 `;
+
+// Helper function to check if a job has company data
+const jobHasCompany = (job: Job): job is Job & { company: NonNullable<Job['company']> } => {
+  return job.company !== undefined && job.company !== null;
+};
 
 const Jobs: React.FC = () => {
   const location = useLocation();
@@ -101,8 +106,7 @@ const Jobs: React.FC = () => {
   // Generate industry options from mock data
   const industryOptions: Option[] = [
     { value: '', label: 'Tous les secteurs' },
-    ...Array.from(new Set(enhancedMockJobs.map(job => job.company?.industry || '')))
-      .filter(industry => industry) // Remove empty strings
+    ...Array.from(new Set(mockCompanies.map(company => company.industry)))
       .map(industry => ({
         value: industry,
         label: industry
@@ -116,12 +120,21 @@ const Jobs: React.FC = () => {
     // Filter by keyword
     if (filters.keyword.trim()) {
       const keyword = filters.keyword.toLowerCase();
-      results = results.filter(job => 
-        job.title.toLowerCase().includes(keyword) || 
-        job.description.toLowerCase().includes(keyword) ||
-        (job.company?.name || '').toLowerCase().includes(keyword) ||
-        job.requirements.some(req => req.toLowerCase().includes(keyword))
-      );
+      results = results.filter(job => {
+        // Check title and description
+        if (job.title.toLowerCase().includes(keyword) || 
+            job.description.toLowerCase().includes(keyword) ||
+            job.requirements.some(req => req.toLowerCase().includes(keyword))) {
+          return true;
+        }
+        
+        // Check company name if company exists
+        if (jobHasCompany(job)) {
+          return job.company.name.toLowerCase().includes(keyword);
+        }
+        
+        return false;
+      });
     }
     
     // Filter by location
@@ -138,9 +151,12 @@ const Jobs: React.FC = () => {
     
     // Filter by industry
     if (filters.industry) {
-      results = results.filter(job => 
-        job.company?.industry?.toLowerCase() === filters.industry.toLowerCase()
-      );
+      results = results.filter(job => {
+        if (jobHasCompany(job)) {
+          return job.company.industry.toLowerCase() === filters.industry.toLowerCase();
+        }
+        return false;
+      });
     }
     
     // Update filtered jobs
